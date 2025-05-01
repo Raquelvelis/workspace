@@ -1,0 +1,136 @@
+erDiagram
+    Owner ||--o{ Dog : owns
+    Owner ||--o{ Membership : purchases
+    Owner ||--o{ Payment : makes
+    Dog ||--o{ Visit : has
+    Dog ||--o{ VaccinationRecord : has
+    Dog ||--o{ BehaviorIncident : involved_in
+    Dog ||--o{ DogInteraction : participates_in
+    Membership ||--o{ Visit : enables
+    Visit ||--o{ AreaUsage : includes
+    ParkArea ||--o{ AreaUsage : tracks
+    DogInteraction }o--|| Visit : during
+    DogInteraction }o--|| InteractionType : categorized_as
+    BehaviorIncident }o--|| Visit : during
+
+    Owner {
+        int OwnerID PK
+        string FirstName
+        string LastName
+        string Email
+        string PhoneNumber
+        string Address
+        string City
+        string State
+        string ZipCode
+        date RegistrationDate
+        boolean IsActive
+        string EmergencyContact
+        string EmergencyPhone
+    }
+
+    Dog {
+        int DogID PK
+        int OwnerID FK
+        string Name
+        string Breed
+        enum Size
+        date DateOfBirth
+        enum Gender
+        string Color
+        text Temperament
+        text SpecialNotes
+        blob Photo
+        string QRCodeID
+        boolean IsActive
+    }
+
+    Membership {
+        int MembershipID PK
+        int OwnerID FK
+        enum MembershipType
+        date StartDate
+        date EndDate
+        boolean IsActive
+        decimal Price
+        boolean AutoRenew
+        date LastRenewalNotice
+    }
+
+    Payment {
+        int PaymentID PK
+        int OwnerID FK
+        int MembershipID FK
+        date PaymentDate
+        decimal Amount
+        enum PaymentMethod
+        string TransactionReference
+        boolean IsSuccessful
+    }
+
+    Visit {
+        int VisitID PK
+        int DogID FK
+        int MembershipID FK
+        datetime CheckInTime
+        datetime CheckOutTime
+        boolean IsReservation
+        datetime ReservationTime
+        text Notes
+    }
+
+    VaccinationRecord {
+        int VaccinationID PK
+        int DogID FK
+        enum VaccinationType
+        date AdministrationDate
+        date ExpirationDate
+        string VetName
+        string VetContact
+        blob DocumentProof
+        boolean IsVerified
+    }
+
+    BehaviorIncident {
+        int IncidentID PK
+        int DogID FK
+        int VisitID FK
+        datetime IncidentTime
+        text Description
+        enum SeverityLevel
+        text StaffAction
+        text FollowUpNotes
+    }
+
+    DogInteraction {
+        int InteractionID PK
+        int DogID1 FK
+        int DogID2 FK
+        int VisitID FK
+        int InteractionTypeID FK
+        text Notes
+    }
+
+    InteractionType {
+        int InteractionTypeID PK
+        string TypeName
+        text Description
+        boolean IsPositive
+    }
+
+    ParkArea {
+        int AreaID PK
+        string AreaName
+        enum DogSizeCategory
+        int MaxCapacity
+        text Description
+        boolean IsActive
+    }
+
+    AreaUsage {
+        int AreaUsageID PK
+        int VisitID FK
+        int AreaID FK
+        datetime EntryTime
+        datetime ExitTime
+    }
