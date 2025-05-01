@@ -2,16 +2,18 @@ erDiagram
     Owner ||--o{ Dog : owns
     Owner ||--o{ Membership : purchases
     Owner ||--o{ Payment : makes
+    Membership ||--o{ Payment : for
+    Membership ||--o{ Visit : enables
     Dog ||--o{ Visit : has
     Dog ||--o{ VaccinationRecord : has
     Dog ||--o{ BehaviorIncident : involved_in
-    Dog ||--o{ DogInteraction : participates_in
-    Membership ||--o{ Visit : enables
+    Visit ||--o| BehaviorIncident : during
+    Dog ||--o{ DogInteraction : participates_as_Dog1
+    Dog ||--o{ DogInteraction : participates_as_Dog2
+    Visit ||--o{ DogInteraction : during
+    InteractionType ||--o{ DogInteraction : categorized_as
     Visit ||--o{ AreaUsage : includes
     ParkArea ||--o{ AreaUsage : tracks
-    DogInteraction }o--|| Visit : during
-    DogInteraction }o--|| InteractionType : categorized_as
-    BehaviorIncident }o--|| Visit : during
 
     Owner {
         int OwnerID PK
@@ -34,9 +36,9 @@ erDiagram
         int OwnerID FK
         string Name
         string Breed
-        enum Size
+        string Size
         date DateOfBirth
-        enum Gender
+        string Gender
         string Color
         text Temperament
         text SpecialNotes
@@ -48,7 +50,7 @@ erDiagram
     Membership {
         int MembershipID PK
         int OwnerID FK
-        enum MembershipType
+        string MembershipType
         date StartDate
         date EndDate
         boolean IsActive
@@ -63,7 +65,7 @@ erDiagram
         int MembershipID FK
         date PaymentDate
         decimal Amount
-        enum PaymentMethod
+        string PaymentMethod
         string TransactionReference
         boolean IsSuccessful
     }
@@ -82,7 +84,7 @@ erDiagram
     VaccinationRecord {
         int VaccinationID PK
         int DogID FK
-        enum VaccinationType
+        string VaccinationType
         date AdministrationDate
         date ExpirationDate
         string VetName
@@ -97,7 +99,7 @@ erDiagram
         int VisitID FK
         datetime IncidentTime
         text Description
-        enum SeverityLevel
+        string SeverityLevel
         text StaffAction
         text FollowUpNotes
     }
@@ -121,7 +123,7 @@ erDiagram
     ParkArea {
         int AreaID PK
         string AreaName
-        enum DogSizeCategory
+        string DogSizeCategory
         int MaxCapacity
         text Description
         boolean IsActive
