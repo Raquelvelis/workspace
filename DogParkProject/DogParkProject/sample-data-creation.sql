@@ -66,16 +66,32 @@ VALUES ( 2, 2, '2023-01-15', 299.99, 'Credit Card', 'TXN12345', 1),
 
 -- 5. Visit Table
 
+-- Old visits (For store procedure archive test)
+
 INSERT INTO Visit (DogID, MembershipID, CheckInTime, CheckOutTime, IsReservation, ReservationTime, Notes)
 VALUES
-    (2, 2, '2023-04-10 10:00:00', '2023-04-10 11:30:00', 0, NULL, 'Regular visit'),
+    (3, 2, '2023-04-10 10:00:00', '2023-04-10 11:30:00', 0, NULL, 'Regular visit'),
     (3, 2, '2023-04-10 10:00:00', '2023-04-10 11:30:00', 0, NULL, 'Came with Max'),
     (4, 3, '2023-04-12 14:30:00', '2023-04-12 16:00:00', 1, '2023-04-12 14:30:00', 'Reserved day before'),
     (5, 4, '2023-04-14 09:15:00', '2023-04-14 10:45:00', 0, NULL, 'Morning visit'),
     (6, 4, '2023-04-14 09:15:00', '2023-04-14 10:45:00', 0, NULL, 'Came with Luna'),
     (7, 6, '2023-04-21 16:00:00', '2023-04-21 17:30:00', 0, NULL, 'First visit with new membership'),
-    (2, 2, '2023-04-22 11:00:00', '2023-04-22 12:45:00', 0, NULL, 'Weekend visit'),
+    (4, 2, '2023-04-22 11:00:00', '2023-04-22 12:45:00', 0, NULL, 'Weekend visit'),
     (3, 2, '2023-04-22 11:00:00', '2023-04-22 12:45:00', 0, NULL, 'Came with Max again');
+
+
+-- New visits
+
+INSERT INTO Visit (DogID, MembershipID, CheckInTime, CheckOutTime, IsReservation, ReservationTime, Notes)
+VALUES
+    (3, 2, '2025-04-10 10:00:00', '2025-04-10 11:30:00', 0, NULL, 'Regular visit'),
+    (3, 2, '2025-04-10 10:00:00', '2025-04-10 11:30:00', 0, NULL, 'Came with Max'),
+    (4, 3, '2025-04-12 14:30:00', '2025-04-12 16:00:00', 1, '2023-04-12 14:30:00', 'Reserved day before'),
+    (5, 4, '2025-04-14 09:15:00', '2025-04-14 10:45:00', 0, NULL, 'Morning visit'),
+    (6, 4, '2025-04-14 09:15:00', '2025-04-14 10:45:00', 0, NULL, 'Came with Luna'),
+    (7, 6, '2025-04-21 16:00:00', '2025-04-21 17:30:00', 0, NULL, 'First visit with new membership'),
+    (4, 2, '2025-04-22 11:00:00', '2025-04-22 12:45:00', 0, NULL, 'Weekend visit'),
+    (3, 2, '2025-04-22 11:00:00', '2025-04-22 12:45:00', 0, NULL, 'Came with Max again');
 
 
 -- 6. VaccinationRecord Table

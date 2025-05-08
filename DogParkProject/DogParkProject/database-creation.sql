@@ -209,3 +209,159 @@ GROUP BY
     a.AreaID,
     a.AreaName,
     a.MaxCapacity;
+GO
+
+----------------------------------------------------------------------------
+-- Store procedures
+----------------------------------------------------------------------------
+
+-- Create the historical data table
+CREATE TABLE VisitHistory (
+    HistoryID INT PRIMARY KEY IDENTITY(1,1),
+-- Owner Info
+    OwnerID INT NOT NULL,
+    OwnerFirstName NVARCHAR(50) NOT NULL,
+    OwnerLastName NVARCHAR(50) NOT NULL,
+    OwnerEmail NVARCHAR(100) NOT NULL,
+    OwnerCity NVARCHAR(50),
+    OwnerState NVARCHAR(2),
+-- Dog Info
+    DogID INT NOT NULL,
+    DogName NVARCHAR(50) NOT NULL,
+    DogBreed NVARCHAR(50) NOT NULL,
+    DogSize NVARCHAR(10) NOT NULL,
+-- Visit data
+    VisitID INT NOT NULL,    -- No foreign key constraint to allow deletion
+    VisitDate DATE NOT NULL,
+    CheckInTime TIME NOT NULL,
+    CheckOutTime TIME,
+    VisitDurationMinutes INT,
+    MembershipType NVARCHAR(20) NOT NULL,
+-- Metadata
+    ArchivedDate DATETIME NOT NULL DEFAULT GETDATE()
+);
+GO
+
+-- Create  index for performance
+CREATE INDEX IX_VisitHistory_VisitID ON VisitHistory(VisitID);
+GO
+
+
+--  Create the archive stored procedure
+CREATE OR ALTER PROCEDURE sp_ArchiveVisitHistory1
+@DaysOld INT = 30  
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @CutoffDate DATE = DATEADD(DAY, -@DaysOld, GETDATE());
+    DECLARE @ArchivedCount INT = 0;
+
+    -- Archive completed visits that are older than the cutoff date and not yet archived
+    INSERT INTO VisitHistory (
+        OwnerID, OwnerFirstName, OwnerLastName, OwnerEmail, OwnerCity, OwnerState,
+        DogID, DogName, DogBreed, DogSize,
+        VisitID, VisitDate, CheckInTime, CheckOutTime, VisitDurationMinutes, MembershipType
+    )
+    SELECT
+        -- Owner demographics
+        o.OwnerID, o.FirstName, o.LastName, o.Email, o.City, o.State,
+
+        -- Dog demographics
+        d.DogID, d.Name, d.Breed, d.Size,
+
+        -- Visit data
+        v.VisitID,
+        CAST(v.CheckInTime AS DATE) AS VisitDate,
+        CAST(v.CheckInTime AS TIME) AS CheckInTime,
+        CAST(v.CheckOutTime AS TIME) AS CheckOutTime,
+        DATEDIFF(MINUTE, v.CheckInTime, v.CheckOutTime) AS VisitDurationMinutes,
+        m.MembershipType
+    FROM
+        Visit v
+            JOIN Dog d ON v.DogID = d.DogID
+            JOIN Owner o ON d.OwnerID = o.OwnerID
+            JOIN Membership m ON v.MembershipID = m.MembershipID
+    WHERE
+        v.CheckOutTime IS NOT NULL  -- Only completed visits
+      AND CAST(v.CheckInTime AS DATE) < @CutoffDate  -- Older than cutoff
+      AND NOT EXISTS (  -- Not already archived
+        SELECT 1 FROM VisitHistory vh WHERE vh.VisitID = v.VisitID
+    );
+
+    SET @ArchivedCount = @@ROWCOUNT;
+    PRINT 'Archived ' + CAST(@ArchivedCount AS NVARCHAR) + ' visit records to VisitHistory table.';
+
+    RETURN @ArchivedCount;
+END;
+GO
+
+
+-- Create the delete stored procedure
+CREATE OR ALTER PROCEDURE sp_DeleteArchivedVisits1
+@DaysOld INT = 30  -- Only delete visits older than this many days
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @CutoffDate DATE = DATEADD(DAY, -@DaysOld, GETDATE());
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        -- Delete related records first to maintain referential integrity
+
+        -- AreaUsage records
+        DELETE au
+        FROM AreaUsage au
+                 INNER JOIN Visit v ON au.VisitID = v.VisitID
+                 INNER JOIN VisitHistory vh ON v.VisitID = vh.VisitID
+        WHERE CAST(v.CheckInTime AS DATE) < @CutoffDate;
+
+        PRINT 'Deleted ' + CAST(@@ROWCOUNT AS NVARCHAR) + ' AreaUsage records.';
+
+        -- BehaviorIncident records
+        DELETE bi
+        FROM BehaviorIncident bi
+                 INNER JOIN Visit v ON bi.VisitID = v.VisitID
+                 INNER JOIN VisitHistory vh ON v.VisitID = vh.VisitID
+        WHERE CAST(v.CheckInTime AS DATE) < @CutoffDate;
+
+        PRINT 'Deleted ' + CAST(@@ROWCOUNT AS NVARCHAR) + ' BehaviorIncident records.';
+
+        -- DogInteraction records
+        DELETE di
+        FROM DogInteraction di
+                 INNER JOIN Visit v ON di.VisitID = v.VisitID
+                 INNER JOIN VisitHistory vh ON v.VisitID = vh.VisitID
+        WHERE CAST(v.CheckInTime AS DATE) < @CutoffDate;
+
+        PRINT 'Deleted ' + CAST(@@ROWCOUNT AS NVARCHAR) + ' DogInteraction records.';
+
+        -- Finally delete the Visit records
+        DELETE v
+        FROM Visit v
+                 INNER JOIN VisitHistory vh ON v.VisitID = vh.VisitID
+        WHERE CAST(v.CheckInTime AS DATE) < @CutoffDate;
+
+        PRINT 'Deleted ' + CAST(@@ROWCOUNT AS NVARCHAR) + ' Visit records.';
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        PRINT 'Error: ' + ERROR_MESSAGE();
+        THROW;
+    END CATCH
+END;
+GO
+
+
+-- How to use both procedures:
+-- Step 1: First archive old visits
+-- EXEC sp_ArchiveVisitHistory1 @DaysOld = 30;
+
+-- Step 2: Delete the archived records
+-- EXEC sp_DeleteArchivedVisits1 @DaysOld = 30;
